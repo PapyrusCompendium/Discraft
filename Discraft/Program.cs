@@ -1,5 +1,7 @@
 ﻿using System;
 
+using Discord.WebSocket;
+
 using Discraft.Extensions;
 
 using Microsoft.Extensions.Hosting;
@@ -11,13 +13,12 @@ namespace Discraft {
                 throw new PlatformNotSupportedException("Only Linux, Windows, and Mac are supported.");
             }
 
-            var hostBuilder = new HostBuilder()
+            var host = new HostBuilder()
                 .UseConsoleLifetime()
-                .UseStartup<DiscraftStartup>();
+                .UseStartup<DiscraftStartup>()
+                .Build();
 
-            hostBuilder
-                .Build()
-                .Start();
+            host.Run();
         }
     }
 }
