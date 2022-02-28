@@ -1,9 +1,16 @@
 ﻿using System;
 
-namespace Discraft {
-    class Program {
-        static void Main(string[] args) {
+using Discraft.Extensions;
 
+using Microsoft.Extensions.Hosting;
+
+namespace Discraft {
+    public class Program {
+        static void Main(string[] args) {
+            var hostBuilder = new HostBuilder()
+                .UseConsoleLifetime()
+                .UseStartup<DiscraftStartup>()
+                .Build();
         }
     }
 }
