@@ -3,6 +3,8 @@ using Discord.WebSocket;
 
 using Discraft.Interfaces;
 using Discraft.Services;
+using Discraft.Services.Discord;
+using Discraft.Services.Discord.Interfaces;
 using Discraft.Services.Interfaces;
 
 using Microsoft.Extensions.Configuration;
@@ -22,15 +24,18 @@ namespace Discraft {
 
         public void ConfigureServices(HostBuilderContext hostBuilderContext, IServiceCollection services) {
             var socketClient = new DiscordSocketClient(new DiscordSocketConfig {
-                LogGatewayIntentWarnings = true
+                LogGatewayIntentWarnings = true,
+                LogLevel = LogSeverity.Verbose
             });
 
             socketClient.LoginAsync(TokenType.Bot, Configuration["DiscordBotToken"]).Wait();
             socketClient.StartAsync().Wait();
 
             services
+                .AddSingleton<ILogger, Logger>()
                 .AddSingleton<IHostedProcess>(new HostedProcess(Configuration["ExecCommand"]))
-                .AddSingleton(socketClient);
+                .AddSingleton(socketClient)
+                .AddSingleton<ICommandHandler, CommandHandler>();
         }
     }
 }

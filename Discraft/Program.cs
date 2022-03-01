@@ -1,8 +1,8 @@
 ﻿using System;
 
-using Discord.WebSocket;
-
 using Discraft.Extensions;
+using Discraft.Services.Discord;
+using Discraft.Services.Discord.Interfaces;
 
 using Microsoft.Extensions.Hosting;
 
@@ -17,6 +17,8 @@ namespace Discraft {
                 .UseConsoleLifetime()
                 .UseStartup<DiscraftStartup>()
                 .Build();
+
+            _ = (CommandHandler)host.Services.GetService(typeof(ICommandHandler));
 
             host.Run();
         }
