@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -28,14 +29,19 @@ namespace Discraft.Services.Discord {
             _configuration = configuration;
             _logger = logger;
 
+            _commandService.Log += CommandServiceLog;
             _discordSocketClient.MessageReceived += DiscordSocketClientMessageReceived;
             _commandService.CommandExecuted += CommandServiceCommandExecuted;
         }
 
         public async Task InitializeAsync() {
-            await _commandService.AddModulesAsync(Assembly.GetExecutingAssembly(), _services);
+            var executingAssembly = Assembly.GetExecutingAssembly();
+            var moduleInfo = await _commandService.AddModulesAsync(executingAssembly, _services);
+
             _logger.Debug($"Execute Command: {_configuration["ExecCommand"]}");
             _logger.Debug($"Log File: {_configuration["LogFile"]}");
+
+            _logger.Info($"Added {moduleInfo.Sum(i => i.Commands.Count)} commands from {executingAssembly.GetName()}.");
         }
 
         private async Task DiscordSocketClientMessageReceived(SocketMessage socketMessage) {
@@ -61,6 +67,31 @@ namespace Discraft.Services.Discord {
 
             _logger.Error($"[{context.User.Username}::{commandInfo.Value.Name}] error: {commandResult}");
             await context.Channel.SendMessageAsync($"[{context.User.Username}::{commandInfo.Value.Name}] error: {commandResult}");
+        }
+
+        private Task CommandServiceLog(LogMessage logMessage) {
+            var stringMessage = $"[{logMessage.Source}] {logMessage.Message}";
+
+            switch (logMessage.Severity) {
+                case LogSeverity.Info:
+                    _logger.Info(stringMessage);
+                    break;
+                case LogSeverity.Warning:
+                    _logger.Warning(stringMessage);
+                    break;
+                case LogSeverity.Error:
+                    _logger.Error(stringMessage);
+                    break;
+                case LogSeverity.Critical:
+                    _logger.Error(stringMessage);
+                    break;
+
+                default:
+                    _logger.Debug(stringMessage);
+                    break;
+            };
+
+            return Task.CompletedTask;
         }
     }
 }
