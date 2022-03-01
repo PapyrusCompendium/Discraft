@@ -2,8 +2,7 @@
 using System.Text.RegularExpressions;
 
 namespace Discraft.Services.Minecraft {
-    class MinecraftEventRegexMatches {
-
+    public class MinecraftEventRegexMatches {
         /// <summary>
         /// This regex should capture all valid Logs from default Mincraft.
         /// Group 1: TimeStamp
@@ -64,15 +63,26 @@ namespace Discraft.Services.Minecraft {
         /// <summary>
         /// All the Regex matches with their <see cref="ConsoleResponseType"/>
         /// </summary>
-        public static Dictionary<MincraftEventTypes, Regex> AllRegexMatches = new Dictionary<MincraftEventTypes, Regex>() {
-                {MincraftEventTypes.Authentication, Authentication },
-                {MincraftEventTypes.DisconnectHandler, DisconnectHandler },
-                {MincraftEventTypes.JoinedGame, JoinedGame },
-                {MincraftEventTypes.LeftGame, LeftGame },
-                {MincraftEventTypes.LostConnection, LostConnection },
-                {MincraftEventTypes.PlayerList, PlayerList },
-                {MincraftEventTypes.SentMessage, SentMessage },
-                {MincraftEventTypes.SpawnedIn, SpawnedIn },
+        public static Dictionary<MincraftEventType, Regex> AllRegexMatches = new Dictionary<MincraftEventType, Regex>() {
+                {MincraftEventType.Authentication, Authentication },
+                {MincraftEventType.DisconnectHandler, DisconnectHandler },
+                {MincraftEventType.JoinedGame, JoinedGame },
+                {MincraftEventType.LeftGame, LeftGame },
+                {MincraftEventType.LostConnection, LostConnection },
+                {MincraftEventType.PlayerList, PlayerList },
+                {MincraftEventType.SentMessage, SentMessage },
+                {MincraftEventType.SpawnedIn, SpawnedIn },
             };
+
+        public static MincraftEventType CheckRegexEvents(string consoleLine) {
+            foreach (var regexObject in AllRegexMatches) {
+                var match = regexObject.Value.Match(consoleLine);
+                if (match.Success) {
+                    return regexObject.Key;
+                }
+            }
+
+            return MincraftEventType.Unknown;
+        }
     }
 }

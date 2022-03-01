@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 using Discraft.Services.Interfaces;
@@ -21,6 +23,8 @@ namespace Discraft.Services {
         private bool _shouldRestart = false;
         private DateTime _lastRetry = DateTime.Now;
         private int _retries = 0;
+
+        private Dictionary<MincraftEventType, Stack<Match>> _commandResponses = new();
 
         ~HostedProcess() {
             _serverProcess.Kill(true);
@@ -109,12 +113,25 @@ namespace Discraft.Services {
         }
 
         private void HostedProcess_OutputDataReceived(object sender, DataReceivedEventArgs dataReceivedEventArgs) {
-            var logMatch = MinecraftEventRegexMatches.MinecraftLog.Match(dataReceivedEventArgs?.Data ?? string.Empty);
+            var consoleMessage = dataReceivedEventArgs?.Data ?? string.Empty;
+            var logMatch = MinecraftEventRegexMatches.MinecraftLog.Match(consoleMessage);
             if (!logMatch.Success) {
                 return;
             }
 
             _logger.Info($"[Minecraft] {logMatch.Groups[4]}");
+
+            var eventType = MinecraftEventRegexMatches.CheckRegexEvents(consoleMessage);
+            if (eventType == MincraftEventType.Unknown) {
+                return;
+            }
+
+            if (!_commandResponses.ContainsKey(eventType)) {
+                _commandResponses.Add(eventType, new Stack<Match>());
+            }
+
+            var match = MinecraftEventRegexMatches.AllRegexMatches[eventType].Match(consoleMessage);
+            _commandResponses[eventType].Push(match);
         }
 
         public void RestartProcess() {
@@ -173,6 +190,27 @@ namespace Discraft.Services {
 
         public void SendStdIn(string commandInput) {
             _serverProcess.StandardInput.WriteLine(commandInput);
+        }
+
+        public Match GetCommandResponse(string commandInput, MincraftEventType excpectedResponseType) {
+            SendStdIn(commandInput);
+
+            // Stack count is O(1) time complexity
+            var currentStackSize = _commandResponses.ContainsKey(excpectedResponseType)
+                ? _commandResponses[excpectedResponseType].Count
+                : 0;
+
+            var waitUntilDate = DateTime.Now.AddSeconds(5);
+
+            while (!_commandResponses.ContainsKey(excpectedResponseType)
+                || _commandResponses[excpectedResponseType].Count < currentStackSize
+                || DateTime.Now > waitUntilDate) {
+                Thread.Sleep(500);
+            }
+
+            return _commandResponses[excpectedResponseType].Count == currentStackSize
+                ? Match.Empty
+                : _commandResponses[excpectedResponseType].Pop();
         }
     }
 }

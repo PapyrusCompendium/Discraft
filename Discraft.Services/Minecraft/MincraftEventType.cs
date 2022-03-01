@@ -1,5 +1,5 @@
 ﻿namespace Discraft.Services.Minecraft {
-    public enum MincraftEventTypes {
+    public enum MincraftEventType {
         JoinedGame,
         Authentication,
         SpawnedIn,
@@ -7,6 +7,10 @@
         LostConnection,
         DisconnectHandler,
         SentMessage,
+        /// <summary>
+        /// Group 1: Joined
+        /// Group 2: Max
+        /// </summary>
         PlayerList,
         Unknown
     }
