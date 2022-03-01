@@ -170,5 +170,9 @@ namespace Discraft.Services {
             _logger.Warning($"Starting Mincraft Process ID: {_serverProcess.Id}");
             return true;
         }
+
+        public void SendStdIn(string commandInput) {
+            _serverProcess.StandardInput.WriteLine(commandInput);
+        }
     }
 }
