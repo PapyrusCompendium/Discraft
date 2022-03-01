@@ -28,5 +28,12 @@ namespace Discraft.Services.Discord.CommandModules {
 
             await ReplyAsync($"There are {match.Groups[1]} out of {match.Groups[2]} players online.");
         }
+
+        [Command("Exec"), Summary("Execute any command.")]
+        public async Task ExecAsync([Remainder] string command) {
+            _hostedProcess.SendStdIn(command);
+
+            await ReplyAsync($"Sent command to stdin.");
+        }
     }
 }

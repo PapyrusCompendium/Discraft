@@ -63,16 +63,20 @@ namespace Discraft.Services.Minecraft {
         /// <summary>
         /// All the Regex matches with their <see cref="ConsoleResponseType"/>
         /// </summary>
-        public static Dictionary<MincraftEventType, Regex> AllRegexMatches = new Dictionary<MincraftEventType, Regex>() {
-                {MincraftEventType.Authentication, Authentication },
-                {MincraftEventType.DisconnectHandler, DisconnectHandler },
-                {MincraftEventType.JoinedGame, JoinedGame },
-                {MincraftEventType.LeftGame, LeftGame },
-                {MincraftEventType.LostConnection, LostConnection },
-                {MincraftEventType.PlayerList, PlayerList },
-                {MincraftEventType.SentMessage, SentMessage },
-                {MincraftEventType.SpawnedIn, SpawnedIn },
-            };
+        public static Dictionary<MincraftEventType, Regex> AllRegexMatches = new() {
+            { MincraftEventType.Authentication, Authentication },
+            { MincraftEventType.DisconnectHandler, DisconnectHandler },
+            { MincraftEventType.JoinedGame, JoinedGame },
+            { MincraftEventType.LeftGame, LeftGame },
+            { MincraftEventType.LostConnection, LostConnection },
+            { MincraftEventType.PlayerList, PlayerList },
+            { MincraftEventType.SentMessage, SentMessage },
+            { MincraftEventType.SpawnedIn, SpawnedIn },
+        };
+
+        public static List<MincraftEventType> CommandResponses = new() {
+            MincraftEventType.PlayerList
+        };
 
         public static MincraftEventType CheckRegexEvents(string consoleLine) {
             foreach (var regexObject in AllRegexMatches) {

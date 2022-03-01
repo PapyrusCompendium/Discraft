@@ -14,6 +14,7 @@ namespace Discraft.Services {
     public class HostedProcess : IHostedProcess {
         private const string PROCESS_ID_PATH = "server.process";
 
+        private readonly Dictionary<MincraftEventType, Stack<Match>> _commandResponses = new();
         private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
         private readonly TimeSpan _restartDelay = TimeSpan.FromSeconds(5);
@@ -23,8 +24,6 @@ namespace Discraft.Services {
         private bool _shouldRestart = false;
         private DateTime _lastRetry = DateTime.Now;
         private int _retries = 0;
-
-        private Dictionary<MincraftEventType, Stack<Match>> _commandResponses = new();
 
         ~HostedProcess() {
             _serverProcess.Kill(true);
@@ -86,6 +85,8 @@ namespace Discraft.Services {
         }
 
         private void HostedProcess_Exited(object sender, EventArgs e) {
+            _commandResponses.Clear();
+
             if (!_shouldRestart) {
                 _logger.Info("Server Shutdown.");
                 return;
@@ -122,7 +123,8 @@ namespace Discraft.Services {
             _logger.Info($"[Minecraft] {logMatch.Groups[4]}");
 
             var eventType = MinecraftEventRegexMatches.CheckRegexEvents(consoleMessage);
-            if (eventType == MincraftEventType.Unknown) {
+            if (eventType == MincraftEventType.Unknown ||
+                !MinecraftEventRegexMatches.CommandResponses.Contains(eventType)) {
                 return;
             }
 
@@ -205,7 +207,7 @@ namespace Discraft.Services {
             while (!_commandResponses.ContainsKey(excpectedResponseType)
                 || _commandResponses[excpectedResponseType].Count < currentStackSize
                 || DateTime.Now > waitUntilDate) {
-                Thread.Sleep(500);
+                Thread.Sleep(150);
             }
 
             return _commandResponses[excpectedResponseType].Count == currentStackSize
