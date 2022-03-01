@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Discraft.Services.Interfaces;
 using Discraft.Services.Minecraft;
@@ -41,7 +42,8 @@ namespace Discraft.Services {
                 Arguments = _configuration["ExecArguments"],
                 WorkingDirectory = _configuration["WorkingDirectory"],
                 RedirectStandardOutput = true,
-                RedirectStandardInput = true
+                RedirectStandardInput = true,
+                RedirectStandardError = true
             };
 
             EnableRaisingEvents = true;
@@ -55,7 +57,7 @@ namespace Discraft.Services {
                 try {
                     if (int.TryParse(File.ReadAllText(PROCESS_ID_PATH), out var existingID)) {
                         var existingProcess = GetProcessById(existingID);
-                        if (existingProcess.StartInfo.FileName == _configuration["ExecProgram"]) {
+                        if (existingProcess.ProcessName == _configuration["ExecProgram"]) {
                             _logger.Warning($"Killing stale server process {existingProcess.Id}");
                             existingProcess.Kill();
                         }
@@ -99,12 +101,12 @@ namespace Discraft.Services {
         }
 
         private void HostedProcess_OutputDataReceived(object sender, DataReceivedEventArgs dataReceivedEventArgs) {
-            var logMatch = MinecraftEventRegexMatches.MinecraftLog.Match(dataReceivedEventArgs.Data);
+            var logMatch = MinecraftEventRegexMatches.MinecraftLog.Match(dataReceivedEventArgs?.Data ?? string.Empty);
             if (!logMatch.Success) {
                 return;
             }
 
-            _logger.Info($"Minecraft: {logMatch.Groups[4]}");
+            _logger.Info($"[Minecraft] {logMatch.Groups[4]}");
         }
 
         public void RestartProcess() {
@@ -114,6 +116,9 @@ namespace Discraft.Services {
 
         public void StopProcess() {
             _shouldRestart = false;
+
+            CancelOutputRead();
+            CancelErrorRead();
             Kill();
             _logger.Warning($"Stopping Mincraft, Process ID: {Id}");
         }
@@ -128,6 +133,18 @@ namespace Discraft.Services {
             }
             catch (IOException ioException) {
                 _logger.Error($"Could not update file server.process: {ioException.Message}");
+            }
+
+            try {
+                BeginOutputReadLine();
+                BeginErrorReadLine();
+            }
+            catch (InvalidOperationException) {
+                CancelOutputRead();
+                CancelErrorRead();
+
+                BeginOutputReadLine();
+                BeginErrorReadLine();
             }
 
             _logger.Warning($"Starting Mincraft Process ID: {Id}");
