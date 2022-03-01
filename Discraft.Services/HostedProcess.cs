@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 
 using Discraft.Services.Interfaces;
 using Discraft.Services.Minecraft;
@@ -10,7 +9,7 @@ using Discraft.Services.Minecraft;
 using Microsoft.Extensions.Configuration;
 
 namespace Discraft.Services {
-    public class HostedProcess : Process, IHostedProcess {
+    public class HostedProcess : IHostedProcess {
         private const string PROCESS_ID_PATH = "server.process";
 
         private readonly IConfiguration _configuration;
@@ -18,12 +17,16 @@ namespace Discraft.Services {
         private readonly TimeSpan _restartDelay = TimeSpan.FromSeconds(5);
         private readonly int _maxRetries = 5;
 
+        private Process _serverProcess;
         private bool _shouldRestart = false;
         private DateTime _lastRetry = DateTime.Now;
         private int _retries = 0;
 
         ~HostedProcess() {
-            Kill();
+            _serverProcess.Kill(true);
+            _serverProcess.Dispose();
+            _serverProcess = null;
+
             File.Delete(PROCESS_ID_PATH);
         }
 
@@ -36,30 +39,35 @@ namespace Discraft.Services {
             _logger.Info($"Executing program: {_configuration["ExecProgram"]}");
             _logger.Info($"Program arguments: {_configuration["ExecArguments"]}");
             _logger.Info($"Working directory: {_configuration["WorkingDirectory"]}");
+        }
 
-            StartInfo = new ProcessStartInfo {
-                FileName = _configuration["ExecProgram"],
-                Arguments = _configuration["ExecArguments"],
-                WorkingDirectory = _configuration["WorkingDirectory"],
-                RedirectStandardOutput = true,
-                RedirectStandardInput = true,
-                RedirectStandardError = true
+        private void ConstructStartInfo() {
+            _serverProcess = new Process {
+                StartInfo = new ProcessStartInfo {
+                    FileName = _configuration["ExecProgram"],
+                    Arguments = _configuration["ExecArguments"],
+                    WorkingDirectory = _configuration["WorkingDirectory"],
+                    RedirectStandardOutput = true,
+                    RedirectStandardInput = true,
+                    RedirectStandardError = true
+                },
+
+                EnableRaisingEvents = true
             };
 
-            EnableRaisingEvents = true;
-            Exited += HostedProcess_Exited;
-            OutputDataReceived += HostedProcess_OutputDataReceived;
-            ErrorDataReceived += HostedProcess_ErrorDataReceived;
+            _serverProcess.Exited += HostedProcess_Exited;
+            _serverProcess.OutputDataReceived += HostedProcess_OutputDataReceived;
+            _serverProcess.ErrorDataReceived += HostedProcess_ErrorDataReceived;
         }
 
         private void KillStaleProcess() {
             if (File.Exists(PROCESS_ID_PATH)) {
                 try {
                     if (int.TryParse(File.ReadAllText(PROCESS_ID_PATH), out var existingID)) {
-                        var existingProcess = GetProcessById(existingID);
+                        var existingProcess = Process.GetProcessById(existingID);
                         if (existingProcess.ProcessName == _configuration["ExecProgram"]) {
                             _logger.Warning($"Killing stale server process {existingProcess.Id}");
-                            existingProcess.Kill();
+                            existingProcess.Kill(true);
                         }
                     }
                 }
@@ -114,40 +122,53 @@ namespace Discraft.Services {
             StartProcess();
         }
 
-        public void StopProcess() {
+        public bool StopProcess() {
+            if (_serverProcess is null) {
+                _logger.Info("Server already stopped.");
+                return false;
+            }
+
             _shouldRestart = false;
 
-            CancelOutputRead();
-            CancelErrorRead();
-            Kill();
-            _logger.Warning($"Stopping Mincraft, Process ID: {Id}");
+            _logger.Warning($"Stopping Mincraft, Process ID: {_serverProcess.Id}");
+
+            _serverProcess.Kill(true);
+            _serverProcess.WaitForExit((int)TimeSpan.FromSeconds(10).TotalMilliseconds);
+            _serverProcess.Dispose();
+            _serverProcess = null;
+
+            return true;
         }
 
-        public void StartProcess() {
+        public bool StartProcess() {
+            if (_serverProcess?.Responding ?? false) {
+                _logger.Info("Server already running.");
+                return false;
+            }
+
+            ConstructStartInfo();
+
             _shouldRestart = true;
-            Start();
+            _serverProcess.Start();
 
             try {
                 File.Delete(PROCESS_ID_PATH);
-                File.WriteAllText(PROCESS_ID_PATH, Id.ToString());
+                File.WriteAllText(PROCESS_ID_PATH, _serverProcess.Id.ToString());
             }
             catch (IOException ioException) {
                 _logger.Error($"Could not update file server.process: {ioException.Message}");
             }
 
             try {
-                BeginOutputReadLine();
-                BeginErrorReadLine();
+                _serverProcess.BeginOutputReadLine();
+                _serverProcess.BeginErrorReadLine();
             }
             catch (InvalidOperationException) {
-                CancelOutputRead();
-                CancelErrorRead();
 
-                BeginOutputReadLine();
-                BeginErrorReadLine();
             }
 
-            _logger.Warning($"Starting Mincraft Process ID: {Id}");
+            _logger.Warning($"Starting Mincraft Process ID: {_serverProcess.Id}");
+            return true;
         }
     }
 }
