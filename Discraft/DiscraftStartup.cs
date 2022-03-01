@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 
 using Discraft.Interfaces;
@@ -35,7 +36,8 @@ namespace Discraft {
                 .AddSingleton<ILogger, Logger>()
                 .AddSingleton<IHostedProcess>(new HostedProcess(Configuration["ExecCommand"]))
                 .AddSingleton(socketClient)
-                .AddSingleton<ICommandHandler, CommandHandler>();
+                .AddSingleton<ICommandHandler, CommandHandler>()
+                .AddSingleton(new CommandService());
         }
     }
 }

@@ -18,7 +18,8 @@ namespace Discraft {
                 .UseStartup<DiscraftStartup>()
                 .Build();
 
-            _ = (CommandHandler)host.Services.GetService(typeof(ICommandHandler));
+            var commandHandler = (CommandHandler)host.Services.GetService(typeof(ICommandHandler));
+            commandHandler.InitializeAsync().Wait();
 
             host.Run();
         }
