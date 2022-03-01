@@ -34,7 +34,7 @@ namespace Discraft {
 
             services
                 .AddSingleton<ILogger, Logger>()
-                .AddSingleton<IHostedProcess>(new HostedProcess(Configuration["ExecCommand"]))
+                .AddSingleton<IHostedProcess, HostedProcess>()
                 .AddSingleton(socketClient)
                 .AddSingleton<ICommandHandler, CommandHandler>()
                 .AddSingleton(new CommandService());
