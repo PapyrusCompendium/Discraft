@@ -21,9 +21,14 @@ namespace Discraft.Services.Discord.CommandModules {
 
         [Command("info"), Summary("This command provides information to the user.")]
         public async Task InfoAsync() {
-            var msg = $@"Hi {Context.User}!
+            var message = $@"Hi {Context.User}!
 Logs are being written at: {_configurationBuilder["LogFile"]}";
-            await ReplyAsync(msg);
+            await ReplyAsync(message);
+        }
+
+        [Command("Awoo"), Summary("Foxies go Awooooooo!")]
+        public async Task AwooAsync() {
+            await ReplyAsync("Awooooooooooo!");
         }
     }
 }

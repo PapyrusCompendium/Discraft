@@ -8,6 +8,17 @@ namespace Discraft.Services {
 
         public HostedProcess(string execCommand) {
             _execCommand = execCommand;
+
+            StartInfo = new ProcessStartInfo {
+                RedirectStandardOutput = true,
+                RedirectStandardInput = true
+            };
+
+            OutputDataReceived += HostedProcess_OutputDataReceived;
+        }
+
+        private void HostedProcess_OutputDataReceived(object sender, DataReceivedEventArgs e) {
+
         }
 
         public void RestartProcess() {
