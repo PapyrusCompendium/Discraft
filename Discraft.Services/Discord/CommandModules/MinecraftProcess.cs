@@ -7,10 +7,10 @@ using Discraft.Services.Interfaces;
 
 namespace Discraft.Services.Discord.CommandModules {
     public class MinecraftProcess : ModuleBase<CommandContext> {
-        private readonly IHostedProcess _hostedProcess;
+        private readonly IMinecraftServer _hostedProcess;
         private readonly ILogger _logger;
 
-        public MinecraftProcess(IHostedProcess hostedProcess, ILogger logger) {
+        public MinecraftProcess(IMinecraftServer hostedProcess, ILogger logger) {
             _hostedProcess = hostedProcess;
             _logger = logger;
         }

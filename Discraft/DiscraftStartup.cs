@@ -7,6 +7,7 @@ using Discraft.Services;
 using Discraft.Services.Discord;
 using Discraft.Services.Discord.Interfaces;
 using Discraft.Services.Interfaces;
+using Discraft.Services.Minecraft;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +35,7 @@ namespace Discraft {
 
             services
                 .AddSingleton<ILogger, Logger>()
-                .AddSingleton<IHostedProcess, HostedProcess>()
+                .AddSingleton<IMinecraftServer, MinecraftServer>()
                 .AddSingleton(socketClient)
                 .AddSingleton<ICommandHandler, CommandHandler>()
                 .AddSingleton(new CommandService());

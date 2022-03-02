@@ -25,10 +25,5 @@ namespace Discraft.Services.Discord.CommandModules {
 Logs are being written at: {_configurationBuilder["LogFile"]}";
             await ReplyAsync(message);
         }
-
-        [Command("Awoo"), Summary("Foxies go Awooooooo!")]
-        public async Task AwooAsync() {
-            await ReplyAsync("Awooooooooooo!");
-        }
     }
 }

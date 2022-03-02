@@ -1,22 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 
 using Discraft.Services.Interfaces;
-using Discraft.Services.Minecraft;
+using Discraft.Services.Minecraft.Interfaces;
 
 using Microsoft.Extensions.Configuration;
 
-namespace Discraft.Services {
-    public class HostedProcess : IHostedProcess {
+namespace Discraft.Services.Minecraft {
+    public class MinecraftServer : IMinecraftServer {
         private const string PROCESS_ID_PATH = "server.process";
 
-        private readonly Dictionary<MincraftEventType, Stack<Match>> _commandResponses = new();
         private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
+        private readonly ICommandTracker _commandTracker;
         private readonly TimeSpan _restartDelay = TimeSpan.FromSeconds(5);
         private readonly int _maxRetries = 5;
 
@@ -25,7 +24,7 @@ namespace Discraft.Services {
         private DateTime _lastRetry = DateTime.Now;
         private int _retries = 0;
 
-        ~HostedProcess() {
+        ~MinecraftServer() {
             _serverProcess.Kill(true);
             _serverProcess.Dispose();
             _serverProcess = null;
@@ -33,10 +32,10 @@ namespace Discraft.Services {
             File.Delete(PROCESS_ID_PATH);
         }
 
-        public HostedProcess(IConfiguration configuration, ILogger logger) {
+        public MinecraftServer(IConfiguration configuration, ILogger logger, ICommandTracker commandTracker) {
             _configuration = configuration;
             _logger = logger;
-
+            _commandTracker = commandTracker;
             KillStaleProcess();
 
             _logger.Info($"Executing program: {_configuration["ExecProgram"]}");
@@ -85,7 +84,7 @@ namespace Discraft.Services {
         }
 
         private void HostedProcess_Exited(object sender, EventArgs e) {
-            _commandResponses.Clear();
+            _commandTracker.ClearTrackkedCommands();
 
             if (!_shouldRestart) {
                 _logger.Info("Server Shutdown.");
@@ -120,20 +119,7 @@ namespace Discraft.Services {
                 return;
             }
 
-            _logger.Info($"[Minecraft] {logMatch.Groups[4]}");
-
-            var eventType = MinecraftEventRegexMatches.CheckRegexEvents(consoleMessage);
-            if (eventType == MincraftEventType.Unknown ||
-                !MinecraftEventRegexMatches.CommandResponses.Contains(eventType)) {
-                return;
-            }
-
-            if (!_commandResponses.ContainsKey(eventType)) {
-                _commandResponses.Add(eventType, new Stack<Match>());
-            }
-
-            var match = MinecraftEventRegexMatches.AllRegexMatches[eventType].Match(consoleMessage);
-            _commandResponses[eventType].Push(match);
+            _commandTracker.TrackConsoleOutput(logMatch);
         }
 
         public void RestartProcess() {

@@ -1,10 +1,10 @@
 ﻿using System;
 
 using Discraft.Extensions;
-using Discraft.Services;
 using Discraft.Services.Discord;
 using Discraft.Services.Discord.Interfaces;
 using Discraft.Services.Interfaces;
+using Discraft.Services.Minecraft;
 
 using Microsoft.Extensions.Hosting;
 
@@ -25,7 +25,7 @@ namespace Discraft {
             commandHandler.InitializeAsync().Wait();
 
             // Init our hosted Mincraft process.
-            var minecraft = (HostedProcess)host.Services.GetService(typeof(IHostedProcess));
+            var minecraft = (MinecraftServer)host.Services.GetService(typeof(IMinecraftServer));
             minecraft.StartProcess();
 
             host.Run();

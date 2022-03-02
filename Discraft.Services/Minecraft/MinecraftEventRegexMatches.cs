@@ -13,6 +13,37 @@ namespace Discraft.Services.Minecraft {
         public static Regex MinecraftLog = new(@"\[(.+)\] \[(.+)/(.+)\]: (.+)");
 
         /// <summary>
+        /// All the Regex matches with their <see cref="ConsoleResponseType"/>
+        /// </summary>
+        public static Dictionary<MincraftEventType, Regex> AllRegexMatches = new() {
+            { MincraftEventType.Authentication, Authentication },
+            { MincraftEventType.DisconnectHandler, DisconnectHandler },
+            { MincraftEventType.JoinedGame, JoinedGame },
+            { MincraftEventType.LeftGame, LeftGame },
+            { MincraftEventType.LostConnection, LostConnection },
+            { MincraftEventType.PlayerList, PlayerList },
+            { MincraftEventType.SentMessage, SentMessage },
+            { MincraftEventType.SpawnedIn, SpawnedIn },
+        };
+
+        public static List<MincraftEventType> CommandResponses = new() {
+            MincraftEventType.PlayerList
+        };
+
+        public static MincraftEventType CheckRegexEvents(string consoleLine, out Match matchedLog) {
+            foreach (var regexObject in AllRegexMatches) {
+                var match = regexObject.Value.Match(consoleLine);
+                if (match.Success) {
+                    matchedLog = match;
+                    return regexObject.Key;
+                }
+            }
+
+            matchedLog = Match.Empty;
+            return MincraftEventType.Unknown;
+        }
+
+        /// <summary>
         /// Group 1: Player name
         /// </summary>
         public static Regex JoinedGame = new(@"Server thread\/INFO]: (.+) joined the game");
@@ -59,34 +90,5 @@ namespace Discraft.Services.Minecraft {
         /// Group 2: Max count
         /// </summary>
         public static Regex PlayerList = new(@"There are (\d+) of a max of (\d+).+");
-
-        /// <summary>
-        /// All the Regex matches with their <see cref="ConsoleResponseType"/>
-        /// </summary>
-        public static Dictionary<MincraftEventType, Regex> AllRegexMatches = new() {
-            { MincraftEventType.Authentication, Authentication },
-            { MincraftEventType.DisconnectHandler, DisconnectHandler },
-            { MincraftEventType.JoinedGame, JoinedGame },
-            { MincraftEventType.LeftGame, LeftGame },
-            { MincraftEventType.LostConnection, LostConnection },
-            { MincraftEventType.PlayerList, PlayerList },
-            { MincraftEventType.SentMessage, SentMessage },
-            { MincraftEventType.SpawnedIn, SpawnedIn },
-        };
-
-        public static List<MincraftEventType> CommandResponses = new() {
-            MincraftEventType.PlayerList
-        };
-
-        public static MincraftEventType CheckRegexEvents(string consoleLine) {
-            foreach (var regexObject in AllRegexMatches) {
-                var match = regexObject.Value.Match(consoleLine);
-                if (match.Success) {
-                    return regexObject.Key;
-                }
-            }
-
-            return MincraftEventType.Unknown;
-        }
     }
 }

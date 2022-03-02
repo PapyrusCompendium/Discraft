@@ -2,8 +2,8 @@
 
 using Discraft.Services.Minecraft;
 
-namespace Discraft.Services.Interfaces {
-    public interface IHostedProcess {
+namespace Discraft.Services.Minecraft.Interfaces {
+    public interface IMinecraftServer {
         Match GetCommandResponse(string commandInput, MincraftEventType excpectedResponseType);
         void RestartProcess();
         void SendStdIn(string commandInput);
